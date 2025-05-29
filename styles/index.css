@@ -201,11 +201,13 @@ body::before {
 .song-list, .upcoming-list {
     max-height: calc(100vh - 140px);
     overflow-y: auto;
+    margin-top: 10px;
 }
 
 .song-item, .upcoming-item {
     background: rgba(240, 239, 235, 0.6);
     margin-bottom: 8px;
+    margin-right: 10px;
     padding: 12px;
     border-radius: 12px;
     cursor: pointer;

@@ -69,11 +69,14 @@ function loadSongsFromDirectory() {
     });
 }
 
+import { Queue } from './queue.js';
+import { Stack } from './stack.js';
+
 // Song playback data structures
 let isAscending = true;
 let currentSong = null;  // Currently playing song
-let playingQueue = [];      // Queue for upcoming songs
-let playHistory = [];    // Stack for played songs
+let playingQueue = new Queue();      // Queue for upcoming songs
+let playHistory = new Stack();    // Stack for played songs
 
 // Original songs array (unsorted)
 let originalSongs = [];
@@ -192,65 +195,60 @@ function clearPlayer() {
 
 // Function to play a song
 function playSong(song) {
+    if (currentSong && song.title === currentSong.title && song.artist === currentSong.artist) {
+        console.log('Same song already playing. Skipping re-play.');
+        return;
+    }
+
     console.log('Playing song:', song.title, 'by', song.artist);
-    
+
     try {
-        // If we're playing a new song, add the current one to history
         if (currentSong) {
             playHistory.push(currentSong);
         }
-        
-        // Update current song
+
         currentSong = song;
-        
-        // Remove active class from all items
+
         document.querySelectorAll('.song-item').forEach(item => {
             item.classList.remove('active');
         });
-        
-        // Find and add active class to the song item
+
         document.querySelectorAll('.song-item').forEach(item => {
             const index = parseInt(item.dataset.index);
-            if (index >= 0 && index < songs.length && 
-                songs[index].title === song.title && 
-                songs[index].artist === song.artist) {
+            if (
+              index >= 0 && 
+              index < songs.length && 
+              songs[index] &&  // check existence
+              songs[index].title === song.title && 
+              songs[index].artist === song.artist
+            ) {
                 item.classList.add('active');
             }
         });
-        
-        // Update current song display
+
         updateCurrentSong();
-        
-        // Reload upcoming list
         loadUpcomingList();
-        
-        // Create a completely new audio player each time
+
         if (audioPlayer) {
-        audioPlayer.pause();
+            audioPlayer.pause();
             audioPlayer = null;
         }
-        
+
         audioPlayer = new Audio();
         audioPlayer.addEventListener('timeupdate', updateProgress);
         audioPlayer.addEventListener('ended', playNextFromQueue);
-        
-        // Set the source and play
+
         audioPlayer.src = song.file;
         audioPlayer.load();
-        
-        // Update play button to show pause icon
-        const playBtn = document.querySelector('.play-btn');
-        playBtn.textContent = '⏸';
-        
-        // Play the song
+
+        document.querySelector('.play-btn').textContent = '⏸';
+
         const playPromise = audioPlayer.play();
-        
         if (playPromise !== undefined) {
             playPromise.then(() => {
                 console.log('Audio playback started successfully');
             }).catch(error => {
                 console.error('Error playing audio:', error);
-                // Try to recover
                 setTimeout(() => {
                     audioPlayer.play().catch(e => console.error('Retry failed:', e));
                 }, 1000);
@@ -263,33 +261,33 @@ function playSong(song) {
 
 // Function to add a song to the queue
 function addToQueue(song) {
-    playingQueue.push(song);
-    
-    // Show notification
+    if (!song || !song.title || !song.artist) {
+        console.warn('Trying to add invalid song to queue:', song);
+        return;
+    }
+
+    playingQueue.insert(song);
     showNotification(`"${song.title}" added to queue`);
-    
-    // Update the upcoming list
     loadUpcomingList();
 }
 
 // Function to play the next song from the queue
 function playNextFromQueue() {
-    if (playingQueue.length > 0) {
+    if (playingQueue.size() > 0) {
         // Get the next song from the queue
-        const nextSong = playingQueue.shift();
+        const nextSong = playingQueue.remove();
         playSong(nextSong);
     } else if (currentSong) {
         // If queue is empty but we have a current song, just stop
         audioPlayer.pause();
         audioPlayer.currentTime = 0;
         document.querySelector('.play-btn').textContent = '▶';
-        animateWaveform(false);
     }
 }
 
 // Function to play the previous song from history
 function playPreviousFromHistory() {
-    if (playHistory.length > 0) {
+    if (playHistory.size() > 0) {
         // If current song is playing and has progressed, restart it
         if (audioPlayer && audioPlayer.currentTime > 5) {
             audioPlayer.currentTime = 0;
@@ -301,7 +299,7 @@ function playPreviousFromHistory() {
         
         // Add current song to the front of the queue
         if (currentSong) {
-            playingQueue.unshift(currentSong);
+            playingQueue.insertFront(currentSong);
         }
         
         // Play the previous song without adding to history
@@ -406,8 +404,7 @@ function loadUpcomingList() {
     const upcomingList = document.querySelector('.upcoming-list');
     upcomingList.innerHTML = '';
     
-    // If queue is empty, show a message
-    if (playingQueue.length === 0) {
+    if (playingQueue.size() === 0) {
         const emptyMessage = document.createElement('div');
         emptyMessage.className = 'empty-queue-message';
         emptyMessage.textContent = 'No upcoming songs. Add songs to the queue!';
@@ -415,35 +412,60 @@ function loadUpcomingList() {
         return;
     }
     
-    // Add all songs from the queue
-    playingQueue.forEach((song, index) => {
+    const queueArray = playingQueue.toArray();
+    queueArray.forEach((song, idx) => {
+        if (!song) return; // Skip undefined/null entries
+
         const upcomingItem = document.createElement('div');
         upcomingItem.className = 'upcoming-item';
-        
-        // Create the song info container
-        upcomingItem.innerHTML = `
-            <div class="song-title">${song.title}</div>
-            <div class="song-artist">${song.artist}</div>
-            <div class="queue-position">#${index + 1}</div>
-        `;
-        
-        // Add a remove button
+
+        // Clear the previous content (if needed)
+        upcomingItem.innerHTML = '';
+
+        // Create and populate title element
+        const titleEl = document.createElement('div');
+        titleEl.className = 'song-title';
+        titleEl.textContent = song.title || 'Unknown Title';
+
+        // Create and populate artist element
+        const artistEl = document.createElement('div');
+        artistEl.className = 'song-artist';
+        artistEl.textContent = song.artist || 'Unknown Artist';
+
+        // Create and populate queue position element
+        const posEl = document.createElement('div');
+        posEl.className = 'queue-position';
+        posEl.textContent = `#${idx + 1}`;
+
+        // Append to the parent container
+        upcomingItem.appendChild(titleEl);
+        upcomingItem.appendChild(artistEl);
+        upcomingItem.appendChild(posEl);
+
+
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-from-queue';
         removeBtn.innerHTML = '&times;';
-        removeBtn.addEventListener('click', function() {
-            // Remove this song from the queue
-            playingQueue.splice(index, 1);
-            // Update the list
-            loadUpcomingList();
-            // Show notification
-            showNotification(`Removed from queue`);
+
+        removeBtn.addEventListener('click', () => {
+            // Get fresh queueArray (because queue may have changed)
+            const currentQueue = playingQueue.toArray();
+            // Find index of this song in current queue
+            const currentIndex = currentQueue.findIndex(s => s === song);
+            if (currentIndex !== -1) {
+                playingQueue.removeAt(currentIndex);
+                loadUpcomingList();
+                showNotification(`Removed from queue`);
+            } else {
+                console.warn('Song to remove not found in queue:', song);
+            }
         });
-        
+
         upcomingItem.appendChild(removeBtn);
         upcomingList.appendChild(upcomingItem);
     });
 }
+
 
 // Function to toggle sort order
 function toggleSort() {
@@ -580,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Playback controls using specific IDs
     document.getElementById('play-btn').addEventListener('click', function () {
         if (!currentSong) {
-            if (playingQueue.length > 0) {
+            if (playingQueue.size() > 0) {
                 playNextFromQueue();
             }
             return;
@@ -625,4 +647,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update progress bar
         updateProgress();
     });
+    document.querySelector('.sort-button').addEventListener('click', toggleSort);
+    document.getElementById('search-input').addEventListener('input', searchSongs);
+    document.querySelector('.clear-search').addEventListener('click', clearSearch);
 });
