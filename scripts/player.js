@@ -63,8 +63,8 @@ function loadSongsFromDirectory() {
         return {
             title: title,
             artist: artist,
-            file: `/assets/music/${file}`,
-            cover: `/assets/images/covers/${title}.jpg`
+            file: `/assets/music/${encodeURIComponent(file)}`,
+            cover: `/assets/images/covers/${encodeURIComponent(title)}.jpg`
         };
     });
 
