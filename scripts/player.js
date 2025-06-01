@@ -67,16 +67,24 @@ function loadSongsFromDirectory() {
             cover: `../assets/images/covers/${title}.jpg`
         };
     });
+
+    songTrie = new Trie();
+    songs.forEach((song, idx) => {
+        songTrie.insert(song.title, idx);
+        songTrie.insert(song.artist, idx);
+    });
 }
 
 import { Queue } from './queue.js';
 import { Stack } from './stack.js';
+import { Trie } from './trie.js';
 
 // Song playback data structures
 let isAscending = true;
 let currentSong = null;  // Currently playing song
-let playingQueue = new Queue();      // Queue for upcoming songs
-let playHistory = new Stack();    // Stack for played songs
+let playingQueue = new Queue();
+let playHistory = new Stack();
+let songTrie = null;
 
 // Original songs array (unsorted)
 let originalSongs = [];
@@ -544,11 +552,9 @@ function searchSongs() {
         return;
     }
     
-    // Filter songs based on search term
-    filteredSongs = songs.filter(song => {
-        return song.title.toLowerCase().includes(searchTerm) || 
-               song.artist.toLowerCase().includes(searchTerm);
-    });
+    //Filter songs
+    const matchedIndexes = songTrie.searchPrefix(searchTerm);
+    filteredSongs = Array.from(matchedIndexes).map(idx => songs[idx]);
     
     // Load the filtered songs
     loadSongs(filteredSongs);
