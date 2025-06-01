@@ -1,6 +1,9 @@
 // Song data array - will be populated from music directory
 let songs = [];
 
+// Define the base path for assets - CHANGE THIS if your GitHub repository name is different!
+const basePath = '/K-Tune';
+
 // Function to load songs from the music directory
 function loadSongsFromDirectory() {
     // Get all music files from the directory
@@ -63,8 +66,8 @@ function loadSongsFromDirectory() {
         return {
             title: title,
             artist: artist,
-            file: `/assets/music/${encodeURIComponent(file)}`,
-            cover: `/assets/images/covers/${encodeURIComponent(title)}.jpg`
+            file: `${basePath}/assets/music/${encodeURIComponent(file)}`,
+            cover: `${basePath}/assets/images/covers/${encodeURIComponent(title)}.jpg`
         };
     });
 
