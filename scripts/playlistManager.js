@@ -258,32 +258,60 @@ export function loadUpcomingList() {
     });
 }
 
+function quickSort(arr, left = 0, right = arr.length - 1) {
+    if (left < right) {
+        const pivotIndex = partition(arr, left, right);
+        quickSort(arr, left, pivotIndex - 1);
+        quickSort(arr, pivotIndex + 1, right);
+    }
+    return arr;
+}
 
-// Function to toggle sort order (Affects the main song list display)
+function partition(arr, left, right) {
+    const pivot = arr[right].title.toLowerCase();
+    let i = left - 1;
+
+    for (let j = left; j < right; j++) {
+        if (isAscending) {
+            if (arr[j].title.toLowerCase() <= pivot) {
+                i++;
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        } else {
+            if (arr[j].title.toLowerCase() >= pivot) {
+                i++;
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+    }
+    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
+    return i + 1;
+}
+
+// Function to toggle sort order
 export function toggleSort() {
     const button = document.querySelector('.sort-button');
-    // Ensure the sort button exists
-     if (!button) {
+    if (!button) {
         console.error('Sort button not found!');
         return;
     }
 
-    // Sort ONLY the songs array for the main playlist
-    // Use imported songs array (modify it in place)
-    songs.sort((a, b) => {
-        if (isAscending) {
-            return b.title.localeCompare(a.title);
-        } else {
-            return a.title.localeCompare(b.title);
-        }
-    });
+    // Create a copy of the songs array to sort
+    const songsToSort = [...songs];
+    
+    // Sort the songs using QuickSort
+    quickSort(songsToSort);
+    
+    // Update the original songs array
+    songs.length = 0;
+    songs.push(...songsToSort);
 
     // Update button text and sort state
     isAscending = !isAscending;
     button.textContent = isAscending ? 'Sort Z - A' : 'Sort A - Z';
 
     // Reload the main playlist with the sorted songs
-    loadSongs(songs); // Call exported loadSongs
+    loadSongs(songs);
 }
 
 // Function to search songs (Filters the main song list display)

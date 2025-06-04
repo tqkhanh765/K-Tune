@@ -185,15 +185,7 @@ export function playPreviousFromHistory() {
 
     if (playHistory.size() > 0) {
         const previousSong = playHistory.pop();
-
-        if (currentSong) {
-            if (!(previousSong.title === currentSong.title && previousSong.artist === currentSong.artist)) {
-                playingQueue.insertFront(currentSong);
-            }
-        }
-
         playSong(previousSong);
-
     } else {
         console.log('Play history is empty.');
         if(audioPlayer && currentSong) {

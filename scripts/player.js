@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded. Initializing player...');
     loadSongsFromDirectory();
     loadSongs();
-
+    
     // Play/Pause Button
     document.getElementById('play-btn').addEventListener('click', function () {
         console.log('Play/Pause button clicked.');
