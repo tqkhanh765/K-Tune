@@ -245,9 +245,9 @@ export function loadUpcomingList() {
             // Find index of this song in current queue
             const currentIndex = currentQueue.findIndex(s => s === song);
             if (currentIndex !== -1) {
-                playingQueue.removeAt(currentIndex); // Use imported playingQueue
-                loadUpcomingList(); // Call exported loadUpcomingList to re-render the queue
-                showNotification(`Removed from queue`); // Call exported showNotification
+                playingQueue.removeAt(currentIndex);
+                loadUpcomingList();
+                showNotification(`Removed from queue`);
             } else {
                 console.warn('Song to remove not found in queue:', song);
             }
@@ -317,7 +317,6 @@ export function toggleSort() {
 // Function to search songs (Filters the main song list display)
 export function searchSongs() {
     const searchInput = document.getElementById('search-input');
-    // Ensure the search input exists
     if (!searchInput) {
         console.error('Search input element not found!');
         return;
@@ -325,20 +324,16 @@ export function searchSongs() {
 
     const searchTerm = searchInput.value.trim().toLowerCase();
 
-    // If search is empty, show all songs
     if (searchTerm === '') {
-        filteredSongs = []; // Clear filtered songs
-        loadSongs(songs); // Load all songs using exported loadSongs and imported songs
+        filteredSongs = [];
+        loadSongs(songs);
         return;
     }
 
-    // Filter songs using the imported songTrie
     const matchedIndexes = songTrie.searchPrefix(searchTerm);
-    // Use the imported songs array to get the full song objects by index
     filteredSongs = Array.from(matchedIndexes).map(idx => songs[idx]);
 
-    // Load the filtered songs into the playlist display
-    loadSongs(filteredSongs); // Call exported loadSongs with the filtered list
+    loadSongs(filteredSongs);
 }
 
 // Function to clear search (Resets the main song list display)
